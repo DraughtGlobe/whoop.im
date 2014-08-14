@@ -21,11 +21,7 @@ function s_Channel_Users(database, id, user, channel, role)
         var current_object = this;
 
         //id null but user.id and channel.id are not? This should be in the database
-        this.database.query()
-        .insert("channels_users",
-            ['user_id', 'channel_id', 'role', 'active', 'date_set'],
-            [user.getId(), channel.getId(), role, 1, {value: "NOW()", escape: false}])
-        .execute(function(error, result){
+        this.database.query('insert into channels_users (user_id, channel_id, role, active, date_set) VALUES (?, ?, ?, ?, NOW())', [user.getId(), channel.getId(), role, 1], function(error, result){
             if (error) {
                 console.log('ERROR: ' + error);
             }
@@ -65,11 +61,7 @@ s_Channel_Users.prototype.setRole = function(role)
 {
     if(this.id != null && this.id > 0)
     {
-        this.database.query().
-        update('channels_users').
-        set({ 'role': role }).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('update channels_users set role = ? where id = ?', [role, this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;
@@ -102,11 +94,7 @@ s_Channel_Users.prototype.setActive = function(active)
     
     if(this.id != null && this.id > 0)
     {
-        this.database.query().
-        update('channels_users').
-        set({ 'active': active }).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('update channels_users set active = ? where id = ?', [active, this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;
@@ -143,11 +131,7 @@ s_Channel_Users.prototype.mute = function()
     
     if(this.id != null && this.id > 0)
     {
-        this.database.query().
-        update('channels_users').
-        set({ 'muted': 1 }).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('Update channels_users set muted = 1 where id = ?', [this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;
@@ -163,11 +147,7 @@ s_Channel_Users.prototype.unmute = function()
     
     if(this.id != null && this.id > 0)
     {
-        this.database.query().
-        update('channels_users').
-        set({ 'muted': 0 }).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('Update channels_users set muted = 0 where id = ?', [this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;

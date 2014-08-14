@@ -32,11 +32,7 @@ function s_Channel(database, name, user_list, list_event_callback, callback)
     this.list_event_callback(this, 'update_public', true);
     
     // get channel from database if exists
-    database.query()
-    .select('*')
-    .from('channels')
-    .where("name = ? AND persistent = 1", [name])
-    .execute(function(error, rows, cols) {
+    database.query('Select * from channels where name = ? and persistent = 1', [name], function(error, rows, cols){
         if (error) {
                 console.log('ERROR: ' + error);
                 callback(false);
@@ -52,12 +48,7 @@ function s_Channel(database, name, user_list, list_event_callback, callback)
             current_object.is_public = rows[0]['public'];
             
             // get bans for this channel
-            database.query()
-            .select('ib.*, u.username')
-            .from([{'ib':'ip_bans'}])
-            .join({'type':'left', 'table':'users', 'alias':'u', 'conditions':'ib.user_id=u.id'})
-            .where('ib.channel_id = ?', [current_object.id])
-            .execute(function(error, rows_ip_bans, cols) {
+            database.query('Select ib.*, u.username from ip_bans as ib left outer join users as u on ib.user_id=u.id where ib.channel_id = ?', [current_object.id], function(error, rows_ip_bans, cols) {
                 if (error) {
                         console.log('ERROR: ' + error);
                         callback(false);
@@ -376,11 +367,7 @@ s_Channel.prototype.addUser = function(user, user_channels_sql_result_optional, 
     } else {
         //console.log('2');
         // check if in the database for registered role
-        this.database.query()
-        .select('*')
-        .from('channels_users')
-        .where('user_id = ? AND channel_id = ?', [user.getId(), this.id])
-        .execute(function(error, rows, cols) {
+        this.database.query('select * from channels_users where user_id = ? and channel_id = ?', [user.getId(), this.id], function(error, rows, cols) {
             if (error) {
                     console.log('ERROR: ' + error);
                     return;
@@ -521,11 +508,7 @@ s_Channel.prototype.register = function(callback)
         // closure scope
         var current_channel = this;
         
-        this.database.query()
-        .insert("channels",
-                ['name', 'topic', 'persistent', 'date_created'],
-                [this.name, this.topic, 1, {value: "NOW()", escape: false}])
-        .execute(function(error, result){
+        this.database.query('insert into channels (name, topic, persistent, date_created) VALUES (?, ?, ?, NOW())', ['name', 'topic', 'persistent', 'date_created'], function(error, result){
             if (error) {
                 console.log('ERROR: ' + error);
 
@@ -548,11 +531,8 @@ s_Channel.prototype.register = function(callback)
                 if(channel_users[user_name].getUser().isRegged())
                 {
 
-                    current_channel.database.query()
-                    .insert("channels_users",
-                        ['user_id', 'channel_id', 'role', 'active', 'date_set'],
-                        [channel_users[user_name].getUser().getId(), current_channel.id, channel_users[user_name].getRole(), 1, {value: "NOW()", escape: false}])
-                    .execute(function(error, result){
+                    current_channel.database.query('insert into channels_users (user_id, channel_id, role, active, date_set) VALUES (?, ?, ?, ?, NOW())', [channel_users[user_name].getUser().getId(), current_channel.id, channel_users[user_name].getRole(), 1], 
+                    function(error, result){
                         if (error) {
                             console.log('ERROR: ' + error);
                         } else {
@@ -690,11 +670,7 @@ s_Channel.prototype.ban = function(user_to_ban)
         
         if(this.isRegged())
         {      
-            this.database.query()
-            .insert("ip_bans",
-                    ['IP', 'date_added', 'channel_id', 'user_id'],
-                    [ip_to_ban, {value: "NOW()", escape: false}, this.id, (user_to_ban.isRegged()?user_to_ban.id:0), ])
-            .execute(function(error, result){
+            this.database.query('insert into ip_bans (IP, date_added, channel_id, user_id) VALUES (?, NOW(), ?, ?)', [ip_to_ban, {value: "NOW()", escape: false}, this.id, (user_to_ban.isRegged()?user_to_ban.id:0)], function(error, result){
                 if (error) {
                     console.log('ERROR: ' + error);
                     // we got an error, we failed :-(
@@ -825,11 +801,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
                     if(!ip_found_in_banned_users)
                     {
                         // first time IP found
-                        this.database.query()
-                        .update('ip_bans')
-                        .set({"IP": 0})
-                        .where("channel_id = ? AND user_id = ? ", [this.id, user_banned['user'].id])
-                        .execute(function(error, result){
+                        this.database.query('update ip_bans set IP = 0 where channel_id = ? and user_id = ?', [this.id, user_banned['user'].id], function(error, result){
                             if (error) {
                                  console.log('QUERY 1: ERROR: ' + error);
                                 // we got an error, we failed :-(
@@ -841,11 +813,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
 
                     } else {
                         // Ip was already found
-                        this.database.query()
-                        .delete()
-                        .from("ip_bans")
-                        .where("channel_id = ? AND IP = ? AND user_id = ?", [this.id, ip_bans[i], user_banned['user'].id])
-                        .execute(function(error, result){
+                        this.database.query('delete from ip_bans where channel_id = ? and IP = ? and user_id = ?', [this.id, ip_bans[i], user_banned['user'].id], function(error, result){
                             if (error) {
                                  console.log('QUERY 2: ERROR: ' + error);
                                 // we got an error, we failed :-(
@@ -867,11 +835,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
             this.ips_banned.splice(ip_index, 1); // Remove it if really found!
 
             // query to remove every ip record
-            this.database.query()
-            .delete()
-            .from("ip_bans")
-            .where("channel_id = ? AND IP = ? ", [this.id, ip_bans[i]])
-            .execute(function(error, result){
+            this.database.query('Delete from ip_bans where channel_id = ? and IP = ?', [this.id, ip_bans[i]], function(error, result){
                 if (error) {
                      console.log('QUERY 3: ERROR: ' + error);
                     // we got an error, we failed :-(
@@ -905,11 +869,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
                 {
                     //console.log('P');
                     // query to remove every user record
-                    this.database.query()
-                    .delete()
-                    .from("ip_bans")
-                    .where("channel_id = ? AND user_id = ? ", [this.id, user_banned['user'].id])
-                    .execute(function(error, result){
+                    this.database.query('Delete from ip_bans where channel_id = ? and user_id = ?', [this.id, user_banned['user'].id], function(error, result){
                         if (error) {
                              console.log('QUERY 4: ERROR: ' + error);
                             // we got an error, we failed :-(
@@ -930,11 +890,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
                         {
                             //console.log('S');
                             // verwijder em MICHAEL JACKSON MOVE! (want we hebben er al een record op user_id = 0 geset )
-                            this.database.query()
-                            .delete()
-                            .from("ip_bans")
-                            .where("channel_id = ? AND IP = ? AND user_id = ?", [this.id, user_banned['ips'][j], user_banned['user'].id])
-                            .execute(function(error, result){
+                            this.database.query('Delete from ip_bans where channel_id = ? AND IP = ? AND user_id = ?', [this.id, user_banned['ips'][j], user_banned['user'].id], function(error, result){
                                 if (error) {
                                      console.log('QUERY 5: ERROR: ' + error);
                                     // we got an error, we failed :-(
@@ -946,11 +902,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
                         } else {
                             //console.log('T');
                             // query: user still has ips, set them to user_id = 0
-                            this.database.query()
-                            .update('ip_bans')
-                            .set({"user_id": 0})
-                            .where("channel_id = ? AND IP = ? AND user_id = ?", [this.id, user_banned['ips'][j], user_banned['user'].id])
-                            .execute(function(error, result){
+                            this.database.query('update ip_bans set user_id = 0 where channel_id = ? AND IP = ? AND user_id = ?', [this.id, user_banned['ips'][j], user_banned['user'].id], function(error, result){
                                 if (error) {
                                      console.log('QUERY 6: ERROR: ' + error);
                                     // we got an error, we failed :-(
@@ -972,11 +924,7 @@ s_Channel.prototype.unban = function(ip_bans, user_bans)
                 delete this.users_banned[user_bans[i]]
 
                 // query: zet rechten terug op 3
-                this.database.query()
-                .update('channels_users')
-                .set({"role": 3})
-                .where("channel_id = ? AND user_id = ? ", [this.id, user_banned['user'].id])
-                .execute(function(error, result){
+                this.database.query('update channels_users set role = 3 where channel_id = ? AND user_id = ?', [this.id, user_banned['user'].id], function(error, result){
                     if (error) {
                          console.log('QUERY 7: ERROR: ' + error);
                         // we got an error, we failed :-(
@@ -1332,11 +1280,7 @@ s_Channel.prototype.setPublic = function(is_public)
         // closure scope
         var current_channel = this;
         
-        this.database.query().
-        update('channels').
-        set({'public': (is_public?'1':'0')}).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('update channels set public = ? where id = ? '[(is_public?'1':'0'), this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;
@@ -1371,11 +1315,7 @@ s_Channel.prototype.setTopic = function(topic)
         //closure scope
         var current_channel = this;
         
-        this.database.query().
-        update('channels').
-        set({'topic': topic}).
-        where('id = ?', [ this.id ]).
-        execute(function(error, result) {
+        this.database.query('update channels set topic = ? where id = ?', [topic, this.id], function(error, result) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;

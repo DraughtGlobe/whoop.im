@@ -1,7 +1,17 @@
 /**
  *  Global settings
  */
-var compile_js = true;
+var db_config = {
+    "socket": "/opt/lampp/var/mysql/mysql.sock",
+    //"host": "localhost",
+    "user": "woopwoop",
+    "password": "U4pknGbSb8avcusVN3uMBW8v",
+    "database": "woopwoop"
+}
+var http_port = '8000';
+/**
+ * End of global settings
+ */
 
 
 var fs = require('fs');
@@ -13,6 +23,7 @@ try{
 } catch (e) {
     console.log('Could not open debug file')
 }
+var compile_js = true;
 if(debug_file_content == '1\n')
 {
     console.log('DEBUG MODE ENABLED');
@@ -31,7 +42,7 @@ if(debug_file_content == '1\n')
      '/js/page.class.js':{path:'./includes/page.class.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/js/pm.class.js':{path:'./includes/pm.class.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/js/interface.class.js':{path:'./includes/interface.class.js', content_type:'text/javascript', is_binary:false, extern:false},
-     '/js/socket.io.js':{path:'./node_modules/socket.io/node_modules/socket.io-client/dist/socket.io.js', content_type:'text/javascript', is_binary:false, extern:true},
+     '/js/socket.io.js':{path:'./node_modules/socket.io/node_modules/socket.io-client/socket.io.js', content_type:'text/javascript', is_binary:false, extern:true},
      '/js/init.js':{path:'./includes/init.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/style.css':{path:'./includes/style.css', content_type:'text/css', is_binary:false},
      '/img/bg-top.png':{path:'./includes/bg-top.png', content_type:'image/png', is_binary:true},
@@ -157,7 +168,7 @@ var s = http.createServer(function(req, client){
     
     loadFile(req.url, client);
 });
-s.listen(8000);
+s.listen(http_port);
 
 function loadFile(url, client)
 {
@@ -211,7 +222,7 @@ s_Security = require('./classes/security.class.js')
 
 //var s_live = http.createServer(handler);
 var s_io = io.listen(s);
-s_io.set('log level', 1);
+// s_io.set('log level', 1);
 
 // TODO: setting
 var max_messages_per_second = 2;
@@ -260,22 +271,16 @@ user_list.getUsers = function()
 
 //mysql client
 var database = null
-var mysql = require("db-mysql");
-new mysql.Database({
-    "socket": "/opt/lampp/var/mysql/mysql.sock",
-    /*"hostname": "localhost",*/
-    "user": "woopwoop",
-    "password": "U4pknGbSb8avcusVN3uMBW8v",
-    "database": "woopwoop"
-}).connect(function(error) {
+var mysql = require("mysql");
+var db_conn = mysql.createConnection(db_config);
+
+
+db_conn.connect(function(error) {
     if (error) {
         console.log("CONNECTION error: " + error);
         process.exit(1);
     }
-    database = this;
-    
-    // Let's see if this works :)
-    //database.query().exterminate = eval('database.query().delete');
+    database = db_conn;
     
     console.log("DB Connection succesfull!");
    
@@ -318,7 +323,7 @@ new mysql.Database({
    
    
     // Retrieve all the regged channels and put them in 'channels' (this is for the channel lists)
-    this.query().execute('Select name from channels where public = 1' , [], function(error, rows, cols) {
+    database.query('Select name from channels where public = 1' , [], function(error, rows, cols) {
         if (error) {
             console.log('ERROR: ' + error);
             return false;
@@ -458,11 +463,7 @@ new mysql.Database({
                             user.emit('started', {'is_root':user.isRoot()} );
 
                             // get first page from db
-                            database.query()
-                            .select('title, text')
-                            .from('text_pages')
-                            .where("id = 1")
-                            .execute(function(error, rows, cols) {
+                            database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                                 if(rows.length > 0)
                                 {
                                     user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
@@ -477,12 +478,7 @@ new mysql.Database({
                             var active_channels_joined = user.joinActiveChannels();
 
                             //get all active ChannelUsers for this user and add them
-                            database.query()
-                            .select('cu.*, c.name')
-                            .from([{'cu':'channels_users'}])
-                            .join({'type':'inner', 'table':'channels', 'alias':'c', 'conditions':'c.id=cu.channel_id'})
-                            .where("user_id = ? AND active = 1", [user.getId()])
-                            .execute(function(error, rows, cols) {
+                            database.query('select cu.*, c.name from channel_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
                                 if (error) {
                                     console.log('ERROR: ' + error);
                                     return false;
@@ -602,11 +598,7 @@ new mysql.Database({
                             user.setSocket(socket);
 
                             // get first page from db
-                            database.query()
-                            .select('title, text')
-                            .from('text_pages')
-                            .where("id = 1")
-                            .execute(function(error, rows, cols) {
+                            database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                                 if(rows.length > 0)
                                 {
                                     user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
@@ -737,11 +729,7 @@ new mysql.Database({
                         user.emit('started', {'is_root':user.isRoot()} );
                         
                         // get first page from db
-                        database.query()
-                        .select('title, text')
-                        .from('text_pages')
-                        .where("id = 1")
-                        .execute(function(error, rows, cols) {
+                        database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                             if(rows.length > 0)
                             {
                                 user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
@@ -756,12 +744,7 @@ new mysql.Database({
                         var active_channels_joined = user.joinActiveChannels();
                         
                         //get all active ChannelUsers for this user and add them
-                        database.query()
-                        .select('cu.*, c.name')
-                        .from([{'cu':'channels_users'}])
-                        .join({'type':'inner', 'table':'channels', 'alias':'c', 'conditions':'c.id=cu.channel_id'})
-                        .where("user_id = ? AND active = 1", [user.getId()])
-                        .execute(function(error, rows, cols) {
+                        database.query('select cu.*, c.name from channel_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
                             if (error) {
                                 console.log('ERROR: ' + error);
                                 return false;
@@ -877,11 +860,7 @@ new mysql.Database({
                         user.setSocket(socket);
                         
                         // get first page from db
-                        database.query()
-                        .select('title, text')
-                        .from('text_pages')
-                        .where("id = 1")
-                        .execute(function(error, rows, cols) {
+                        database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                             if(rows.length > 0)
                             {
                                 user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
@@ -2056,11 +2035,7 @@ var setSocketCallbacks = function(socket, user, list_event_function)
         
         var title = s_Security.escape.textTitle(data.title)
         
-        database.query()
-        .select('*')
-        .from('text_pages')
-        .where("title = ? and active = 1", [title])
-        .execute(function(error, rows, cols) {
+            database.query('Select * from text_pages where title = ? and active = 1', [title], function(error, rows, cols) {
             if (error) {
                 console.log('ERROR: ' + error);
                 return;
