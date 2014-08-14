@@ -1,0 +1,395 @@
+html,
+body {
+   margin:0;
+   padding:0;
+   height:100%;
+   font-family: Arial;
+}
+#main ul{
+margin: 0 0 0 0;
+padding: 0 0 0 0;
+}
+
+#main ul li {
+font-size: 12px;
+padding: 5px;
+clear: both;
+}
+
+#main ul li b{
+float:left;
+width: 12%;
+overflow:hidden;
+}
+
+#main ul li b.memessage{
+float:left;
+width: 100%
+}
+#main ul li span{
+float:right;
+width: 88%;
+}
+
+#main ul li:nth-child(even){
+background-color: #f6f5f4;
+}
+
+#main ul li:nth-child(odd){
+background-color: #f0eeed;
+}
+
+.clear{
+clear:both;
+}
+#container {
+   height:100%;
+   width:100%;
+   /*position:relative;*/
+}
+
+#header {
+   background-color:#22799F;
+    
+}
+
+#tabs{
+    position:absolute;
+    top:31px;
+    width:100%;
+    height:27px; /* Height of the header */
+}
+
+#tabs_rooms{
+    float:left;
+    width:80%;
+}
+
+#tabs ul{
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+#tabs_rooms ul{
+    float:left;
+}
+ 
+#tabs ul li{
+    padding: 5px;
+    margin:5px;
+}
+
+#tabs ul li.tabs_idle{
+    color: #FFFFFF;
+    background-color:#22799F;
+}
+
+#tabs ul li.tabs_active{
+    color: #FFFFFF;
+    background-color:#0C4259;
+}
+
+#tabs ul li.tabs_notify{
+    color: #000000;
+    background-color: #F5B800;
+}
+
+#tabs_rooms ul li {
+   float:left;
+}
+
+#tabs_list ul li {
+   float:right;
+}
+
+#tabs_rooms ul li:first-child{
+    margin-left:10px;
+}
+
+#tabs_list ul li:first-child{
+    margin-right:10px;
+}
+ 
+#tabs ul li a{
+    float: left;
+    text-decoration: none;
+    color: white;
+    
+    background-color: #333;
+}
+
+#header h1{
+    color: #FFF;
+    text-shadow: 1px 1px 1px #eee, -1px -1px -1px #ccc;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-left:20px;
+    margin-top: 0;
+}
+
+#main {
+    position:absolute;
+    left:0;
+    right:0;
+    top:65px;
+    bottom:50px;
+    padding: 10px;
+    overflow:hidden;
+    /*padding-bottom:60px;   /* Height of the footer */
+    /*padding-top:50px; /* Height of the header */
+}
+#input_container {
+   position:absolute;
+   bottom:0;
+   width:100%;
+   height:50px;   /* Height of the footer */
+   background:#6cf;
+   border-top: 2px solid #0C4259;
+   text-align: center;
+   background-color:#22799F;
+}
+
+.room {
+    /*position:relative;*/
+    float:left;
+    height:98%;
+    width: 80%;
+	border: 1px solid #ccc;
+	overflow-y: auto;
+	
+}
+
+.room ul {
+    list-style-type: none;
+}
+
+/* hide by default */
+#pm {
+    display:none;
+}
+
+.pm {
+    float:left;
+    height:98%;
+    width: 100%;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+    
+}
+
+.pm ul {
+    list-style-type: none;
+}
+
+.text_page {
+    float:left;
+    height:98%;
+    width: 100%;
+	border: 1px solid #ccc;
+	overflow-y: auto;
+}
+
+#channel_list {
+    float:left;
+    height:98%;
+    width: 100%;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+    display:none;
+}
+
+
+#channel_list_table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#channel_list_table th {
+  background-color: #EAEAEA;
+}
+
+#channel_list_table td, th {
+  border: 1px solid black;
+}
+
+/* hide by default */
+#text_page {
+    display:none;
+}
+
+ul.user_list{
+    /*position:relative;*/
+	float:right;
+	height:98%;
+    width: 18%;
+	border: 1px solid #ccc;
+	list-style-type: none;
+	margin: 0 0 0 0;
+	padding: 0 0 0 0;
+	overflow-y: scroll;
+	
+}
+
+ul.user_list li {
+    padding: 8px 10px !important;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+ul.user_list li:nth-child(even){
+    background-color: #f6f5f4;
+}
+
+ul.user_list li:nth-child(odd){
+    background-color: #f0eeed;
+}
+
+input{
+    width: 50%;
+    padding: 10px;
+    font-style: italic;
+    border-radius: 5px;
+    border: 1px solid #999;
+    margin: 5px auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+input:hover{
+    border-color: #333;
+}
+
+input:focus{
+    border-color: #333;
+}
+
+#popup_base
+{
+    display:none;
+    position:absolute;
+    z-index:100;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+}
+
+.popup{
+    /*position:absolute;
+    top:50px;
+    margin: 0 auto;
+
+    width:150px;
+    height:130px;
+    */
+    margin-left:auto;
+    margin-right:auto;
+    margin-top:10px;
+    /*margin-top: -250px;
+    margin-left:auto;
+    margin-right: auto;*/
+    width:500px;
+    height:350px;
+    color: #FFFFFF;
+    padding:15px;
+    background-color: #0C4259;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+.popup hr{
+    color:#FFFFFF;
+}
+
+.popup input{
+    width:100%;
+}
+
+#contextmenu_popup {
+    display:none;
+    top:0;
+    left:0;
+    z-index:99;
+    position:absolute;
+    background-color:#EEEEEE;
+    border: 1px solid #BBBBBB;
+    
+}
+
+#contextmenu_popup span {
+    /*display:none*/
+    display:block;
+    font-size: small;
+    margin:5px;
+    /*background-color: '#B9B9B9';*/
+}
+
+#contextmenu_channel_popup {
+    display:none;
+    top:0;
+    left:0;
+    z-index:99;
+    position:absolute;
+    background-color:#EEEEEE;
+    border: 1px solid #BBBBBB;
+    
+}
+
+#contextmenu_channel_popup span {
+    /*display:none*/
+    display:block;
+    font-size: small;
+    margin:5px;
+    /*background-color: '#B9B9B9';*/
+}
+
+#ip_bans_div,#user_bans_div {
+    /*display:inline;*/
+    width:49%
+}
+
+#ip_bans_div {
+    float:left;
+}
+
+#user_bans_div {
+    float:right;
+}
+
+#ip_bans,#user_bans {
+    height:120px;
+    width:100%;
+}
+
+.list_username {
+    overflow: hidden;
+    width: 100%;
+}
+
+.list_username_self {
+    font-weight: bold;
+    overflow: hidden;
+    width: 100%;
+}
+
+.list_user_modifier {
+    background-color: inherit;
+    float: right;
+    height: 15px;
+    margin-top: -14px;
+    position: relative;
+    width: 15px;
+    z-index: 9;
+}
+
+.status_mini {
+    position: absolute;
+}
+
+.status_mini img {
+    width: 10px;
+}

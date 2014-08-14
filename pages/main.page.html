@@ -1,0 +1,129 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, target-densitydpi=device-dpi, initial-scale=1.0, user-scalable=no" />
+    <title>Whoop.im</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <!-- When assets are used
+    <script type="text/javascript" src="js/socket.io.js"></script>
+    <script type="text/javascript" src="js/js.js"></script>
+    -->
+    <script type="text/javascript" src="js/socket.io.js"></script>
+    <script type="text/javascript" src="js/jquery-1.7.2.js"></script>
+
+    <script type="text/javascript" src="js/client.class.js"></script>
+    <script type="text/javascript" src="js/channel.class.js"></script>
+    <script type="text/javascript" src="js/user.class.js"></script>
+    <script type="text/javascript" src="js/interface.class.js"></script>
+    <script type="text/javascript" src="js/page.class.js"></script>
+    <script type="text/javascript" src="js/pm.class.js"></script>
+    <script type="text/javascript" src="js/init.js"></script>
+</head>
+<body>
+
+    <div id="popup_base">
+        <div id="login_popup" class="popup">
+            Welcome to Whoop.im Chat!<br/>
+            Enter a Username to continue:</br>
+            <input id="login_chatname" class="login_field" maxlength="32" name="chatname" type="text"/><br/>
+            <input id = "chat_button" type="button" value="Go!"/><br/>
+            <hr />
+            If you have previously registered using our registration service, you can log in here:<br/>
+            <input id="login_username" class="login_field" maxlength="32" name="username" type="text"/><br/>
+            <input id="login_password" class="login_field" maxlength="128" name="password" type="password"/><br/>
+            <input id = "login_button" type="button" value="Login!"/>
+        </div>
+        <div id="channel_password_popup" class="popup">
+            <span id='channel_password_popup_password_required'>Channel <span class="channel_password_popup_channel_name"></span> requires a password, enter it:</span>
+            <span id='channel_password_popup_password_invalid'>The password for channel <span class="channel_password_popup_channel_name"></span> was invalid, please re-enter:</span>
+            <span id='channel_password_popup_password_set'>Set a new password for channel <span class="channel_password_popup_channel_name"></span></span>
+            <br />
+            <input id="channel_password" class="login_field" maxlength="128" name="channel_password" type="password"/><br/>
+            <input id = "channel_password_button_cancel" type="button" value="Cancel"/><br/>
+            <input id = "channel_password_button_go" type="button" value="Go!"/><br/>
+        </div>
+        <div id="ban_popup" class="popup">
+            <span>Select people or IP's to unban from channel: <span class="channel_password_popup_channel_name"></span></span>
+            <br />
+            <span id="ip_bans_div">
+                IP's:<br/>
+                <select id="ip_bans" multiple="multiple">
+                </select>
+            </span>
+            <span id="user_bans_div">
+                Users:<br/>
+                <select id="user_bans" multiple="multiple">
+
+                </select>
+            </span>
+            <input id = "unban_matching_elements" type="checkbox" value="1" checked="checked">
+            <label for="ban_matching_elements">Ban matching elements</label>
+            <input id = "unban_button" type="button" value="Unban!"/>
+            <!--
+            <hr />
+            <span>Enter a username or IP to ban:</span>
+            <input id = "ban_input"/>
+            <input id = "ban_button" type="button" value="Ban.."/>
+            -->
+            <input id = "ban_close" type="button" value="Close"/>
+            
+        </div>
+    </div>
+    <div id="contextmenu_popup">
+        <span id="contextmenu_set_admin">Give admin rights</span>
+        <span id="contextmenu_set_moderator">Give moderator rights</span>
+        <span id="contextmenu_set_visitor">Give visitor rights</span>
+        <span id="contextmenu_kick">Kick</span>
+        <span id="contextmenu_ban">Ban</span>
+        <span id="contextmenu_mute">Mute</span>
+        <span id="contextmenu_unmute">Unmute</span>
+        <span id="contextmenu_pm">PM</span>
+    </div>
+    <div id="contextmenu_channel_popup">
+        <span id="contextmenu_channel_close">Close</span>
+        <span id="contextmenu_channel_leave">Leave</span>
+        <span id="contextmenu_channel_set_public"></span>
+        <span id="contextmenu_channel_set_password">Set Password</span>
+        <span id="contextmenu_channel_unban">Unban...</span>
+    </div>
+    
+    <div id='container'>
+        <div id='header'>
+            <h1>Whoop.im</h1>
+        </div>
+        <div id='tabs'>
+            <div id='tabs_rooms'>
+                <ul>
+                </ul>
+            </div>
+        </div>
+        <div id='main'>
+            <div id='room' class='room'>
+                <ul>
+
+                </ul>
+			</div>
+          
+            <ul id="user_list" class='user_list'>
+				
+            </ul>
+            <div id='pm' class='pm'>
+                <ul>
+
+                </ul>
+            </div>
+            <div id="text_page" class="text_page">
+                This be a debug string being a text page
+            </div>
+            <div id="channel_list">
+                <table id="channel_list_table">
+                    <tr><th>Passwd?</th><th>Name</th><th>Users</th><th>Topic</th></tr>
+                </table>
+            </div>
+        </div>
+        <div id='input_container'>
+            <input id="input" value="type your message here.." type="text" />
+        </div>
+    </div>
+</body>
+
+</html>
