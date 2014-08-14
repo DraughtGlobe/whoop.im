@@ -1,33 +1,36 @@
-/**
- *  Global settings
- */
-var db_config = {
-    "socket": "/opt/lampp/var/mysql/mysql.sock",
-    //"host": "localhost",
-    "user": "woopwoop",
-    "password": "U4pknGbSb8avcusVN3uMBW8v",
-    "database": "woopwoop"
-}
-var http_port = '8000';
-/**
- * End of global settings
- */
 
+// config options
+var config = require('./config.js');
 
 var fs = require('fs');
 var net = require('net');
 
-var debug_file_content = null;
-try{
-    debug_file_content = fs.readFileSync('/etc/whoop.im/debug', 'utf8')
-} catch (e) {
-    console.log('Could not open debug file')
-}
+// check debug mode
 var compile_js = true;
-if(debug_file_content == '1\n')
+switch(config.debug_mode.set)
+{
+    case 'file':
+        var debug_file_content = null;
+        try{
+            debug_file_content = fs.readFileSync(config.debug_mode.debug_file, 'utf8')
+        } catch (e) {
+            console.log('Could not open debug file')
+        }
+        if(debug_file_content === '1\n')
+        {
+            compile_js = false;
+        }
+    break;
+    case true:
+        // ok
+    break;
+    case false:
+        compile_js = false;
+    break;   
+}
+if(!compile_js)
 {
     console.log('DEBUG MODE ENABLED');
-    compile_js = false;
 }
 
 /**
@@ -168,7 +171,7 @@ var s = http.createServer(function(req, client){
     
     loadFile(req.url, client);
 });
-s.listen(http_port);
+s.listen(config.http.port, config.http.ip);
 
 function loadFile(url, client)
 {
@@ -272,7 +275,7 @@ user_list.getUsers = function()
 //mysql client
 var database = null
 var mysql = require("mysql");
-var db_conn = mysql.createConnection(db_config);
+var db_conn = mysql.createConnection(config.db_config);
 
 
 db_conn.connect(function(error) {
