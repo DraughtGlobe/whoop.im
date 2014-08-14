@@ -17,11 +17,7 @@ module.exports.checkNickInuse = function(database, username, user_list, callback
         callback(true);
     } else {
         // check DB
-        database.query()
-        .select(["id"])
-        .from("users")
-        .where("username = ?", [ username ])
-        .execute(function(error, rows, columns){
+        database.query('Select id from users where username = ?', [username], function(error, rows, columns){
             if (error) {
                 console.log('ERROR: ' + error);
                 
@@ -62,11 +58,9 @@ module.exports.register = function(database, user, password, email, callback)
     //console.log(ip_address);
     
     // username already check since we are already connected. Insert into db
-    database.query()
-    .insert("users",
-            ['username', 'password', 'email', 'date_joined', 'date_logged', 'ip_joined', 'ip_logged'],
-            [user.getName(), md5.hex_md5('ehjfb74t43' + password), email, {value: "NOW()", escape: false}, {value: "NOW()", escape: false}, user.getIP(), user.getIP()])
-    .execute(function(error, result){
+    database.query('Insert into users (username, password, email, date_joined, date_logged, ip_joined, ip_logged) VALUES (?, ?, ?, NOW(), NOW(), ?, ?)', 
+    [user.getName(), md5.hex_md5('ehjfb74t43' + password), email, user.getIP(), user.getIP()], 
+    function(error, result){
         if (error) {
             console.log('ERROR: ' + error);
             
@@ -88,11 +82,9 @@ module.exports.register = function(database, user, password, email, callback)
                 if(channel_users[user_name].getChannel().isRegged())
                 {
 
-                    database.query()
-                    .insert("channels_users",
-                        ['user_id', 'channel_id', 'role', 'active', 'date_set'],
-                        [user.getId(), channel_users[user_name].getChannel().getId(), channel_users[user_name].getRole(), 1, {value: "NOW()", escape: false}])
-                    .execute(function(error, result){
+                    database.query('insert into channels_users (user_id, channel_id, role, active, date_set) VALUES (?, ?, ?, ?, NOW())', 
+                    [user.getId(), channel_users[user_name].getChannel().getId(), channel_users[user_name].getRole(), 1], 
+                    function(error, result){
                         if (error) {
                             console.log('ERROR: ' + error);
                         } else {
@@ -116,11 +108,7 @@ module.exports.login = function(database, user_list, user, password, callback)
     //console.log('called login function');
     
     // check credentials
-    database.query()
-    .select(["id", "password", "is_root"])
-    .from("users")
-    .where("username = ?", [user.getName()])
-    .execute(function(error, rows, columns){
+    database.query('Select id, password, is_root from users where username = ?', [user.getName()], function(error, rows, columns){
         if (error) {
             console.log('ERROR: ' + error);
             
@@ -142,11 +130,7 @@ module.exports.login = function(database, user_list, user, password, callback)
                 user.setId(rows[0].id);         
                 user.setRoot(Boolean(rows[0].is_root));
 
-                database.query().
-                    update('users').
-                    set({ 'ip_logged': user.getIP(), 'date_logged': {value: "NOW()", escape: false} }).
-                    where('id = ?', [ rows[0].id ]).
-                    execute(function(error, result) {
+                database.query('update users set ip_logged = ?, date_logged = NOW() where id = ?', [user.getIP(), rows[0].id], function(error, result) {
                     if (error) {
                         console.log('ERROR: ' + error);
                     }
