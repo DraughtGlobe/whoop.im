@@ -218,6 +218,7 @@ process.on('exit', function () {
 */
 // class includes
 s_Functions = require('./classes/functions.js');
+s_Functions.setSaltAndPepper(config.db_config.salt, config.db_config.pepper);
 s_User = require('./classes/user.class.js');
 s_Channel = require('./classes/channel.class.js');
 //s_Channel_Users = require('./classes/channel_users.class.js');
@@ -481,7 +482,7 @@ db_conn.connect(function(error) {
                             var active_channels_joined = user.joinActiveChannels();
 
                             //get all active ChannelUsers for this user and add them
-                            database.query('select cu.*, c.name from channel_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
+                            database.query('select cu.*, c.name from channels_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
                                 if (error) {
                                     console.log('ERROR: ' + error);
                                     return false;
@@ -747,7 +748,7 @@ db_conn.connect(function(error) {
                         var active_channels_joined = user.joinActiveChannels();
                         
                         //get all active ChannelUsers for this user and add them
-                        database.query('select cu.*, c.name from channel_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
+                        database.query('select cu.*, c.name from channels_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
                             if (error) {
                                 console.log('ERROR: ' + error);
                                 return false;

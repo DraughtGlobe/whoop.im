@@ -1,6 +1,17 @@
 // prerequisites
 md5 = require('./md5.class.js');
 
+var db_config = {
+    'salt':'',
+    'pepper':''
+};
+
+module.exports.setSaltAndPepper = function(salt, pepper)
+{
+    db_config.salt = salt;
+    db_config.pepper = pepper;
+}
+
 module.exports.validateEmail = function(email) { 
     var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
     return re.test(email);
@@ -59,7 +70,7 @@ module.exports.register = function(database, user, password, email, callback)
     
     // username already check since we are already connected. Insert into db
     database.query('Insert into users (username, password, email, date_joined, date_logged, ip_joined, ip_logged) VALUES (?, ?, ?, NOW(), NOW(), ?, ?)', 
-    [user.getName(), md5.hex_md5('ehjfb74t43' + password), email, user.getIP(), user.getIP()], 
+    [user.getName(),md5.hex_md5(db_config.salt + password + db_config.pepper), email, user.getIP(), user.getIP()], 
     function(error, result){
         if (error) {
             console.log('ERROR: ' + error);
@@ -121,7 +132,7 @@ module.exports.login = function(database, user_list, user, password, callback)
         // Do something with rows & columns
         if(rows.length > 0)
         {
-            if(rows[0].password == md5.hex_md5('ehjfb74t43' + password) )
+            if(rows[0].password == md5.hex_md5(db_config.salt + password + db_config.pepper) )
             {
                 // the resulting id
                 //console.log('id of user logging in: '+ rows[0].id);
