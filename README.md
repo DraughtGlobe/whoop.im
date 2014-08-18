@@ -5,9 +5,9 @@ IRC-like chat in your web-browser! Including server written in nodejs!
 
 Features
 ========
-- Roles: Root, Admin, Moderator, Normal User,
-- Multiple channels,
-- Channel list that get's updated on-the-fly
+- Roles: Root, Admin, Moderator, normal user
+- Multiple channels
+- Channel list that gets updated on-the-fly
 - Muting
 - Kicking
 - Banning
@@ -36,7 +36,7 @@ Setup
 - node main.node.js
 - Browse to the server with the port in config.js using a browser.
 
-If you have imported the woopwoop.sql file you will have a 'Root Account': AdminAccount/AdminAccountPassword. However: I recommend changing the salt in the config.js to a new one for security reasons. In that case the password will become invalid and you'll have to change the current password in the database manually: You need the MD5 of your salt + the password + your pepper concatenated.
+If you have imported the woopwoop.sql file you will have a 'Root' user account: AdminAccount/AdminAccountPassword. However: I recommend changing the salt in the config.js to a new one for security reasons. In that case the password will become invalid and you'll have to change the current password in the database manually: You need the MD5 of your salt + the password + your pepper concatenated.
 
 Debug mode
 =======
