@@ -21,7 +21,7 @@ DBQueue.prototype.query = function(query, params, callback)
 {
     if(this.is_active)
     {
-        connection.query(query, params, callback);
+        this.connection.query(query, params, callback);
     } else {
         // queue for later
         this.queue.push({'query':query, 'param':params, 'callback':callback});
@@ -37,7 +37,7 @@ DBQueue.prototype.setActive = function()
         // check if connection is still active
         if(this.is_active)
         {
-            connection.query(this.queue[0].query, this.queue[0].params, this.queue[0].callback);
+            this.connection.query(this.queue[0].query, this.queue[0].params, this.queue[0].callback);
             this.queue.splice(0, 1);
         } else {
             // connection set to inactive
