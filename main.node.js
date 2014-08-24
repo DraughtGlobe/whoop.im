@@ -301,7 +301,7 @@ function handleDisconnect() {
 }
 handleDisconnect();
 
-var database = new DBQueue(connection);
+var database = new s_DBQueue(connection);
     
 console.log("DB Connection succesfull!");
 
