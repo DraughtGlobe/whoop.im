@@ -12,6 +12,11 @@ function DBQueue(connection)
     this.is_active = false;
 };
 
+DBQueue.prototype.setConection = function(connection)
+{
+    this.connection = connection;
+};
+
 DBQueue.prototype.query = function(query, params, callback)
 {
     if(this.is_active)

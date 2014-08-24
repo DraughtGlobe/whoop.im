@@ -284,6 +284,7 @@ var database = new s_DBQueue(connection);
 var connection;
 function handleDisconnect() {
   connection = mysql.createConnection(config.db_config); // Recreate the connection, since
+  database.setConnection(connection);
                                                   // the old one cannot be reused.
 
   connection.connect(function(err) {              // The server is either down
