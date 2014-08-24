@@ -41,8 +41,8 @@ If you have imported the woopwoop.sql file you will have a 'Root' user account: 
 Debug mode
 =======
 Currently has a 'debug_mode' in config.js which is set to false by default. When set to true, it will compile the client assets using the Google Closure Compiler to one file. You will have to change the Javascript inclusions in pages/main.page.html to:
-    <script type="text/javascript" src="js/socket.io.js"></script>
-    <script type="text/javascript" src="js/js.js"></script>
+    &lt;script type=&quot;text/javascript&quot; src=&quot;js/socket.io.js&quot;&gt;&lt;/script&gt;
+    &lt;script type=&quot;text/javascript&quot; src=&quot;js/js.js&quot;&gt;&lt;/script&gt;
 This is the only thing that the debug mode option currently does.
 
 Legal
