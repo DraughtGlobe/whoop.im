@@ -222,7 +222,8 @@ s_Functions.setSaltAndPepper(config.db_config.salt, config.db_config.pepper);
 s_User = require('./classes/user.class.js');
 s_Channel = require('./classes/channel.class.js');
 //s_Channel_Users = require('./classes/channel_users.class.js');
-s_Security = require('./classes/security.class.js')
+s_Security = require('./classes/security.class.js');
+s_DBQueue = require('./classes/db_queue.class.js');
 
 //var s_live = http.createServer(handler);
 var s_io = io.listen(s);
@@ -276,401 +277,148 @@ user_list.getUsers = function()
 //mysql client
 var database = null
 var mysql = require("mysql");
-var db_conn = mysql.createConnection(config.db_config);
 
+var connection;
+function handleDisconnect() {
+  connection = mysql.createConnection(config.db_config); // Recreate the connection, since
+                                                  // the old one cannot be reused.
 
-db_conn.connect(function(error) {
-    if (error) {
-        console.log("CONNECTION error: " + error);
-        process.exit(1);
+  connection.connect(function(err) {              // The server is either down
+    if(err) {                                     // or restarting (takes a while sometimes).
+      console.log('error when connecting to db:', err);
+      setTimeout(handleDisconnect, 2000); // We introduce a delay before attempting to reconnect,
+    }                                     // to avoid a hot loop, and to allow our node script to
+  });                                     // process asynchronous requests in the meantime.
+                                          // If you're also serving http, display a 503 error.
+  connection.on('error', function(err) {
+    console.log('db error', err);
+    if(err.code === 'PROTOCOL_CONNECTION_LOST') { // Connection to the MySQL server is usually
+      handleDisconnect();                         // lost due to either server restart, or a
+    } else {                                      // connnection idle timeout (the wait_timeout
+      throw err;                                  // server variable configures this)
     }
-    database = db_conn;
+  });
+}
+handleDisconnect();
+
+var database = new DBQueue(connection);
     
-    console.log("DB Connection succesfull!");
-   
-    var list_event_function = function(channel, statuscode, param)
+console.log("DB Connection succesfull!");
+
+var list_event_function = function(channel, statuscode, param)
+{
+    //console.log('list event function on channel: '+ channel.getName() +'. Status: '+statuscode+'. Param: '+param);
+    for(var user_name in user_list.getUsers())
     {
-        //console.log('list event function on channel: '+ channel.getName() +'. Status: '+statuscode+'. Param: '+param);
-        for(var user_name in user_list.getUsers())
+        var list_user = user_list.getUser(user_name);
+        if(list_user.isConnected() && list_user.isChannelListActive())
         {
-            var list_user = user_list.getUser(user_name);
-            if(list_user.isConnected() && list_user.isChannelListActive())
+            if(statuscode == 'update_public')
             {
-                if(statuscode == 'update_public')
+                if(param)
                 {
-                    if(param)
-                    {
-                        list_user.emit('channel_list_add', {
-                            'name':channel.getName(),
-                            'users_no':channel.getNumberOfJoinedUsers(),
-                            'topic':channel.getTopic(),
-                            'has_password':(channel.getPassword()==''?false:true)
-                        });
-                    } else {
-                        list_user.emit('channel_list_remove', {
-                            'name':channel.getName()
-                        });
-                    }
-
+                    list_user.emit('channel_list_add', {
+                        'name':channel.getName(),
+                        'users_no':channel.getNumberOfJoinedUsers(),
+                        'topic':channel.getTopic(),
+                        'has_password':(channel.getPassword()==''?false:true)
+                    });
                 } else {
-                    list_user.emit('channel_list_update', 
-                    {
-                        'channel_name':channel.getName(),
-                        'statuscode':statuscode,
-                        'param':param
+                    list_user.emit('channel_list_remove', {
+                        'name':channel.getName()
                     });
                 }
 
+            } else {
+                list_user.emit('channel_list_update', 
+                {
+                    'channel_name':channel.getName(),
+                    'statuscode':statuscode,
+                    'param':param
+                });
             }
+
         }
     }
-   
-   
-    // Retrieve all the regged channels and put them in 'channels' (this is for the channel lists)
-    database.query('Select name from channels where public = 1' , [], function(error, rows, cols) {
-        if (error) {
-            console.log('ERROR: ' + error);
-            return false;
-        }
-        
-        for(var i = 0; i < rows.length; i++)
-        {
-            //console.log(rows[i].name);
-            // create channel
-            var channel = new s_Channel(database, rows[i].name, user_list, list_event_function, function(success){
-                if(success == 'success')
-                {
-                    //console.log('adding channel '+ channel.getName() + ' to channels');
-                    channels[channel.getName()] = channel;
-                    return true;
+}
 
-                } else {
-                    // TODO: send error
-                    return false;
-                }
-            }); 
-        }
-    }, {'async':false});
-    
-    var server = net.createServer(function(c) { //'connection' listener
-        // console.log('android connected');
-        
-        // grab the user once connected, so we can use it when the socket fails
-        var socket_user = null;
-        
-        c.setNoDelay(true);
-        var started = false;
-        var socket_triggers = {};
-        var socket = {
-            'on':function(action, func)
+
+// Retrieve all the regged channels and put them in 'channels' (this is for the channel lists)
+database.query('Select name from channels where public = 1' , [], function(error, rows, cols) {
+    if (error) {
+        console.log('ERROR: ' + error);
+        return false;
+    }
+
+    for(var i = 0; i < rows.length; i++)
+    {
+        //console.log(rows[i].name);
+        // create channel
+        var channel = new s_Channel(database, rows[i].name, user_list, list_event_function, function(success){
+            if(success == 'success')
             {
-                if(action == 'disconnect')
-                {
-                    c.on('end',func);
-                } else {
-                    socket_triggers[action] = func;
-                }
-            },
-            'emit':function(action, param)
-            {
-                // console.log('android calling "emit":' +  action);
-                if(typeof param === 'undefined')
-                {
-                    param = {'action':action};
-                } else {
-                    param['action'] = action;
-                }
-                
-                // console.log('sending: '+ JSON.stringify(param));
-                c.write(JSON.stringify(param)+'\n');
-                //c.flush();
-            }
-        };
-        
-        c.on('data', function(data) {
-            
-            // console.log('recieve-Data');
-            // console.log(data);
-            data = JSON.parse(data);
-            
-          // console.log(data.toString());
-          var action = data.action;
-          
-          // incoming: login, username, password
-            var start = function(data)
-            {
-                // console.log(data);
+                //console.log('adding channel '+ channel.getName() + ' to channels');
+                channels[channel.getName()] = channel;
+                return true;
 
-                var login =  s_Security.escape.bool(data.login);
-                if(!s_Security.checker.username(data.username))
-                {
-                    socket.emit('invalid_field', {field:'username'});
-                    return;
-                }
-                var username =  data.username;
-                var password =  '';
-                if(s_Security.checker.userPassword(data.password))
-                {
-                    password =  data.password;
-                }
-
-                // check if login
-                if(login)
-                {
-                    // create user
-                    var user = user_list.retrieveUser(username, 'socket');
-
-                    // other scope socket_user
-                    socket_user = user;
-
-                    login_function({'password':password, 'callback':function(success)
-                    {
-                        if(success)
-                        {
-                            // registered user was already connected? Do the disconnect first
-                            if(user.isConnected())
-                            {
-                                //console.log('reconnect->disconnect');
-                                user.emit('logged_in_elsewhere');
-
-                                // remove from his channels
-                                var channel_users = user.getChannelUsers();
-                                for(var channel_name in channel_users)
-                                {   
-                                    var loop_channel = channel_users[channel_name].getChannel(); 
-                                    if(loop_channel.quitUser(user))
-                                    {
-
-                                        if(loop_channel.getNumberOfJoinedUsers() == 0 && !loop_channel.isRegged())
-                                        {
-                                            //console.log('non regged channel \'' + loop_channel.getName() + '\'with no users, deleting...')
-
-                                            // set public to false first, so that everybody's list will be updated accordingly'
-                                            loop_channel.setPublic(false);
-
-                                            // delete channel from list
-                                            delete channels[loop_channel.getName()];
-
-                                            // unset corresponding channel_user
-                                            delete channel_users[channel_name];
-                                        }
-                                    }
-                                }
-
-                                // no moar connection
-                                user.unsetSocket();
-                                user.setChannelListInactive();
-                            }
-
-                            user.setSocket(socket);
-
-                            user.emit('started', {'is_root':user.isRoot()} );
-
-                            // get first page from db
-                            database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
-                                if(rows.length > 0)
-                                {
-                                    user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
-                                }
-
-                            });
-
-
-                            user.setConnected(true);
-
-                            // unregistered channels that we still have, join them
-                            var active_channels_joined = user.joinActiveChannels();
-
-                            //get all active ChannelUsers for this user and add them
-                            database.query('select cu.*, c.name from channels_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
-                                if (error) {
-                                    console.log('ERROR: ' + error);
-                                    return false;
-                                }
-
-
-                                if(rows.length == 0 && !active_channels_joined)
-                                {
-                                    // still make a loop when there is no active channel_user
-                                    rows[0] = null;
-                                }
-
-                                for(var i = 0; i < rows.length; i++)
-                                {
-                                    var channel_name = '';
-                                    if(rows[i] == null)
-                                    {
-                                        // no active channel_user, join main
-                                        channel_name = 'android';
-                                    } else {
-                                        channel_name = rows[i].name;
-                                    }
-
-                                    // copied from socket.on('join_channel'....
-                                    //console.log(user.getName() + ': joining channel ' + channel_name);
-                                    // check if channel exists
-                                    var channel = null;
-                                    if(channel_name in channels)
-                                    {
-                                        //console.log(user.getName() + ': channel already exists');
-                                        channel = channels[channel_name];
-                                        //console.log(rows[i]);
-                                        channel.addUser(user, rows[i], '', function(success)
-                                        {
-                                            switch(success)
-                                            {
-                                                case 'success':
-                                                    //console.log(user.getName() + ': successfull join');
-                                                break;
-                                                case 'fail':
-                                                    //console.log(user.getName() + ': unable to add user');
-                                                break;
-                                                case 'password_required':
-                                                    socket.emit("password_required", {"channel_name":channel_name});
-                                                break;
-                                                case 'password_invalid':
-                                                    socket.emit("password_invalid", {"channel_name":channel_name});
-                                                break;
-                                            }
-                                        });
-
-                                    } else {
-                                        //console.log(user.getName() + ': creating channel on start');
-
-                                        // 'infamous loop problem' rows[i] not being available, create a function around it
-                                        var create_channel = function(channel_name, mysql_result)
-                                        {
-                                            // create channel
-                                            var channel = new s_Channel(database, channel_name, user_list, list_event_function, function(success){
-                                                if(success)
-                                                {
-                                                    // add user
-                                                    //console.log(channel_name);
-
-                                                    channel.addUser(user, mysql_result, '', function(success){
-                                                        if(success == 'success')
-                                                        {
-                                                            // add channel to list
-                                                            //console.log('adding channel '+ channel.getName() + ' to channels');
-                                                            channels[channel.getName()] = channel;
-
-                                                            //console.log(user.getName() + ': successfull join');
-
-                                                        } else {
-                                                            //console.log(user.getName() + ': unable to add user');
-                                                        }
-                                                    });
-
-                                                    return true;
-
-                                                } else {
-                                                    // TODO: send error
-                                                    return false;
-                                                }
-                                            });   
-                                        }
-                                        create_channel(channel_name, rows[i]);
-                                    }
-                                    // end of copy socket.on('join_channel'....
-                                }
-
-                                return true;
-                            });
-
-                            setSocketCallbacks(socket, user, list_event_function);
-                        } else {
-                            delete user;
-                        }
-                    }}, user, socket);
-                } else {
-                    //nickname
-                    s_Functions.checkNickInuse(database, username, user_list, function(success){
-                        if(success)
-                        {
-                            //console.log(username + ': nick ' +  username + ' taken');
-                            socket.emit('nick_taken');
-                        } else {
-                            //console.log(username + ': nick not taken :D');
-
-                            // create user
-                            var user = user_list.retrieveUser(username, 'socket');
-
-                            // other scope socket_user
-                            socket_user = user;
-
-                            user.setConnected(true);
-                            user.setSocket(socket);
-
-                            // get first page from db
-                            database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
-                                if(rows.length > 0)
-                                {
-                                    user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
-                                }
-
-                            });
-
-                            user.emit('started', {'is_root':false} );
-
-                            setSocketCallbacks(socket, user, list_event_function);
-                        }
-                    });
-                }
-
-                started = true;
-            };
-            
-                    
-        c.on('error', function(err){
-            
-            // unset the socket of the user
-            if(socket_user !== null)
-            {
-                socket_user.unsetSocket();
-            }
-            
-            // Handle the connection error.
-            console.log('SOCKET ERROR: ');
-            console.log(err);
-            c.destroy();
-        });
-
-
-          if(action === 'start')
-          {
-                // console.log('pre-start');
-                // console.log(data)
-                start(data);
-          } else if(started)
-          {
-            if(action in socket_triggers)
-            {
-                // console.log('android calling "on":' +  action);
-                socket_triggers[action](data);
             } else {
-                // console.log('Android: unknown action:' + action);
+                // TODO: send error
+                return false;
             }
-          } else {
-              // console.log('Android: Attempting to call action while not calling start first: '+ action);
-          }
-          
-        });
-        c.pipe(c);
-    });    
-    server.listen(8124, function() { //'listening' listener
-        console.log('android socket server bound');
-    });
-    
-    // above statement should have been completed, socket connect
-    s_io.sockets.on('connection', function (socket) {
+        }); 
+    }
+}, {'async':false});
 
-        //console.log('user connecting!');     
+var server = net.createServer(function(c) { //'connection' listener
+    // console.log('android connected');
 
-        //sockets.push(socket);
-        // incoming: login, username, password
-        socket.on('start', function (data) {
-            
-            var login =     s_Security.escape.bool(data.login);
+    // grab the user once connected, so we can use it when the socket fails
+    var socket_user = null;
+
+    c.setNoDelay(true);
+    var started = false;
+    var socket_triggers = {};
+    var socket = {
+        'on':function(action, func)
+        {
+            if(action == 'disconnect')
+            {
+                c.on('end',func);
+            } else {
+                socket_triggers[action] = func;
+            }
+        },
+        'emit':function(action, param)
+        {
+            // console.log('android calling "emit":' +  action);
+            if(typeof param === 'undefined')
+            {
+                param = {'action':action};
+            } else {
+                param['action'] = action;
+            }
+
+            // console.log('sending: '+ JSON.stringify(param));
+            c.write(JSON.stringify(param)+'\n');
+            //c.flush();
+        }
+    };
+
+    c.on('data', function(data) {
+
+        // console.log('recieve-Data');
+        // console.log(data);
+        data = JSON.parse(data);
+
+      // console.log(data.toString());
+      var action = data.action;
+
+      // incoming: login, username, password
+        var start = function(data)
+        {
+            // console.log(data);
+
+            var login =  s_Security.escape.bool(data.login);
             if(!s_Security.checker.username(data.username))
             {
                 socket.emit('invalid_field', {field:'username'});
@@ -682,13 +430,16 @@ db_conn.connect(function(error) {
             {
                 password =  data.password;
             }
-            
+
             // check if login
             if(login)
             {
                 // create user
-                var user = user_list.retrieveUser(username, 'websocket');
-                
+                var user = user_list.retrieveUser(username, 'socket');
+
+                // other scope socket_user
+                socket_user = user;
+
                 login_function({'password':password, 'callback':function(success)
                 {
                     if(success)
@@ -698,7 +449,7 @@ db_conn.connect(function(error) {
                         {
                             //console.log('reconnect->disconnect');
                             user.emit('logged_in_elsewhere');
-                            
+
                             // remove from his channels
                             var channel_users = user.getChannelUsers();
                             for(var channel_name in channel_users)
@@ -722,31 +473,31 @@ db_conn.connect(function(error) {
                                     }
                                 }
                             }
-                            
+
                             // no moar connection
                             user.unsetSocket();
                             user.setChannelListInactive();
                         }
-                        
+
                         user.setSocket(socket);
-                        
+
                         user.emit('started', {'is_root':user.isRoot()} );
-                        
+
                         // get first page from db
                         database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                             if(rows.length > 0)
                             {
                                 user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
                             }
-                            
+
                         });
-                        
-                        
+
+
                         user.setConnected(true);
-                        
+
                         // unregistered channels that we still have, join them
                         var active_channels_joined = user.joinActiveChannels();
-                        
+
                         //get all active ChannelUsers for this user and add them
                         database.query('select cu.*, c.name from channels_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
                             if (error) {
@@ -767,7 +518,7 @@ db_conn.connect(function(error) {
                                 if(rows[i] == null)
                                 {
                                     // no active channel_user, join main
-                                    channel_name = 'main';
+                                    channel_name = 'android';
                                 } else {
                                     channel_name = rows[i].name;
                                 }
@@ -842,7 +593,7 @@ db_conn.connect(function(error) {
 
                             return true;
                         });
-                        
+
                         setSocketCallbacks(socket, user, list_event_function);
                     } else {
                         delete user;
@@ -859,29 +610,293 @@ db_conn.connect(function(error) {
                         //console.log(username + ': nick not taken :D');
 
                         // create user
-                        var user = user_list.retrieveUser(username, 'websocket');
+                        var user = user_list.retrieveUser(username, 'socket');
+
+                        // other scope socket_user
+                        socket_user = user;
+
                         user.setConnected(true);
                         user.setSocket(socket);
-                        
+
                         // get first page from db
                         database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
                             if(rows.length > 0)
                             {
                                 user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
                             }
-                            
+
                         });
-                        
+
                         user.emit('started', {'is_root':false} );
 
                         setSocketCallbacks(socket, user, list_event_function);
                     }
                 });
             }
-        });
-    });
-});    
 
+            started = true;
+        };
+
+
+    c.on('error', function(err){
+
+        // unset the socket of the user
+        if(socket_user !== null)
+        {
+            socket_user.unsetSocket();
+        }
+
+        // Handle the connection error.
+        console.log('SOCKET ERROR: ');
+        console.log(err);
+        c.destroy();
+    });
+
+
+      if(action === 'start')
+      {
+            // console.log('pre-start');
+            // console.log(data)
+            start(data);
+      } else if(started)
+      {
+        if(action in socket_triggers)
+        {
+            // console.log('android calling "on":' +  action);
+            socket_triggers[action](data);
+        } else {
+            // console.log('Android: unknown action:' + action);
+        }
+      } else {
+          // console.log('Android: Attempting to call action while not calling start first: '+ action);
+      }
+
+    });
+    c.pipe(c);
+});    
+server.listen(8124, function() { //'listening' listener
+    console.log('android socket server bound');
+});
+
+// above statement should have been completed, socket connect
+s_io.sockets.on('connection', function (socket) {
+
+    //console.log('user connecting!');     
+
+    //sockets.push(socket);
+    // incoming: login, username, password
+    socket.on('start', function (data) {
+
+        var login =     s_Security.escape.bool(data.login);
+        if(!s_Security.checker.username(data.username))
+        {
+            socket.emit('invalid_field', {field:'username'});
+            return;
+        }
+        var username =  data.username;
+        var password =  '';
+        if(s_Security.checker.userPassword(data.password))
+        {
+            password =  data.password;
+        }
+
+        // check if login
+        if(login)
+        {
+            // create user
+            var user = user_list.retrieveUser(username, 'websocket');
+
+            login_function({'password':password, 'callback':function(success)
+            {
+                if(success)
+                {
+                    // registered user was already connected? Do the disconnect first
+                    if(user.isConnected())
+                    {
+                        //console.log('reconnect->disconnect');
+                        user.emit('logged_in_elsewhere');
+
+                        // remove from his channels
+                        var channel_users = user.getChannelUsers();
+                        for(var channel_name in channel_users)
+                        {   
+                            var loop_channel = channel_users[channel_name].getChannel(); 
+                            if(loop_channel.quitUser(user))
+                            {
+
+                                if(loop_channel.getNumberOfJoinedUsers() == 0 && !loop_channel.isRegged())
+                                {
+                                    //console.log('non regged channel \'' + loop_channel.getName() + '\'with no users, deleting...')
+
+                                    // set public to false first, so that everybody's list will be updated accordingly'
+                                    loop_channel.setPublic(false);
+
+                                    // delete channel from list
+                                    delete channels[loop_channel.getName()];
+
+                                    // unset corresponding channel_user
+                                    delete channel_users[channel_name];
+                                }
+                            }
+                        }
+
+                        // no moar connection
+                        user.unsetSocket();
+                        user.setChannelListInactive();
+                    }
+
+                    user.setSocket(socket);
+
+                    user.emit('started', {'is_root':user.isRoot()} );
+
+                    // get first page from db
+                    database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
+                        if(rows.length > 0)
+                        {
+                            user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
+                        }
+
+                    });
+
+
+                    user.setConnected(true);
+
+                    // unregistered channels that we still have, join them
+                    var active_channels_joined = user.joinActiveChannels();
+
+                    //get all active ChannelUsers for this user and add them
+                    database.query('select cu.*, c.name from channels_users as cu inner join channels as c on c.id=cu.channel_id where user_id = ? and active = 1', [user.getId()], function(error, rows, cols) {
+                        if (error) {
+                            console.log('ERROR: ' + error);
+                            return false;
+                        }
+
+
+                        if(rows.length == 0 && !active_channels_joined)
+                        {
+                            // still make a loop when there is no active channel_user
+                            rows[0] = null;
+                        }
+
+                        for(var i = 0; i < rows.length; i++)
+                        {
+                            var channel_name = '';
+                            if(rows[i] == null)
+                            {
+                                // no active channel_user, join main
+                                channel_name = 'main';
+                            } else {
+                                channel_name = rows[i].name;
+                            }
+
+                            // copied from socket.on('join_channel'....
+                            //console.log(user.getName() + ': joining channel ' + channel_name);
+                            // check if channel exists
+                            var channel = null;
+                            if(channel_name in channels)
+                            {
+                                //console.log(user.getName() + ': channel already exists');
+                                channel = channels[channel_name];
+                                //console.log(rows[i]);
+                                channel.addUser(user, rows[i], '', function(success)
+                                {
+                                    switch(success)
+                                    {
+                                        case 'success':
+                                            //console.log(user.getName() + ': successfull join');
+                                        break;
+                                        case 'fail':
+                                            //console.log(user.getName() + ': unable to add user');
+                                        break;
+                                        case 'password_required':
+                                            socket.emit("password_required", {"channel_name":channel_name});
+                                        break;
+                                        case 'password_invalid':
+                                            socket.emit("password_invalid", {"channel_name":channel_name});
+                                        break;
+                                    }
+                                });
+
+                            } else {
+                                //console.log(user.getName() + ': creating channel on start');
+
+                                // 'infamous loop problem' rows[i] not being available, create a function around it
+                                var create_channel = function(channel_name, mysql_result)
+                                {
+                                    // create channel
+                                    var channel = new s_Channel(database, channel_name, user_list, list_event_function, function(success){
+                                        if(success)
+                                        {
+                                            // add user
+                                            //console.log(channel_name);
+
+                                            channel.addUser(user, mysql_result, '', function(success){
+                                                if(success == 'success')
+                                                {
+                                                    // add channel to list
+                                                    //console.log('adding channel '+ channel.getName() + ' to channels');
+                                                    channels[channel.getName()] = channel;
+
+                                                    //console.log(user.getName() + ': successfull join');
+
+                                                } else {
+                                                    //console.log(user.getName() + ': unable to add user');
+                                                }
+                                            });
+
+                                            return true;
+
+                                        } else {
+                                            // TODO: send error
+                                            return false;
+                                        }
+                                    });   
+                                }
+                                create_channel(channel_name, rows[i]);
+                            }
+                            // end of copy socket.on('join_channel'....
+                        }
+
+                        return true;
+                    });
+
+                    setSocketCallbacks(socket, user, list_event_function);
+                } else {
+                    delete user;
+                }
+            }}, user, socket);
+        } else {
+            //nickname
+            s_Functions.checkNickInuse(database, username, user_list, function(success){
+                if(success)
+                {
+                    //console.log(username + ': nick ' +  username + ' taken');
+                    socket.emit('nick_taken');
+                } else {
+                    //console.log(username + ': nick not taken :D');
+
+                    // create user
+                    var user = user_list.retrieveUser(username, 'websocket');
+                    user.setConnected(true);
+                    user.setSocket(socket);
+
+                    // get first page from db
+                    database.query('Select title, text from text_pages where id = 1', [], function(error, rows, cols) {
+                        if(rows.length > 0)
+                        {
+                            user.emit('text_found', {'title':rows[0].title, 'text':rows[0].text});
+                        }
+
+                    });
+
+                    user.emit('started', {'is_root':false} );
+
+                    setSocketCallbacks(socket, user, list_event_function);
+                }
+            });
+        }
+    });
+});
 
 var login_function = function(data, user, socket)
 {
