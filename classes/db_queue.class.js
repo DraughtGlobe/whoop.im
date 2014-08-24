@@ -12,9 +12,9 @@ function DBQueue(connection)
     this.is_active = false;
 };
 
-DBQueue.prototype.query = function(query, param, callback)
+DBQueue.prototype.query = function(query, params, callback)
 {
-    if(this.connection.is_active)
+    if(this.is_active)
     {
         connection.query(query, params, callback);
     } else {
@@ -25,12 +25,12 @@ DBQueue.prototype.query = function(query, param, callback)
 
 DBQueue.prototype.setActive = function()
 {
-    connection.is_active = true;
+    this.is_active = true;
     
     // proccess zhe queue!
     while (this.queue[0]) {
         // check if connection is still active
-        if(connection.is_active)
+        if(this.is_active)
         {
             connection.query(this.queue[0].query, this.queue[0].params, this.queue[0].callback);
             this.queue.splice(0, 1);
@@ -44,7 +44,7 @@ DBQueue.prototype.setActive = function()
 
 DBQueue.prototype.setInactive = function()
 {
-    connection.is_active = false;
+    this.is_active = false;
 };
 
 module.exports = DBQueue;
