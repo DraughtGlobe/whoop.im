@@ -12,7 +12,7 @@ function DBQueue(connection)
     this.is_active = false;
 };
 
-DBQueue.prototype.setConection = function(connection)
+DBQueue.prototype.setConnection = function(connection)
 {
     this.connection = connection;
 };
