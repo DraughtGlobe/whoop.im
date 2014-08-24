@@ -43,8 +43,8 @@ Debug mode
 =======
 Currently has a 'debug_mode' in config.js which is set to false by default. When set to true, it will compile the client assets using the Google Closure Compiler to one file. You will have to change the Javascript inclusions in pages/main.page.html to:
 
-    &lt;script type=&quot;text/javascript&quot; src=&quot;js/socket.io.js&quot;&gt;&lt;/script&gt;
-    &lt;script type=&quot;text/javascript&quot; src=&quot;js/js.js&quot;&gt;&lt;/script&gt;
+    <script type="text/javascript" src="js/socket.io.js"></script>
+    <script type="text/javascript" src="js/js.js"></script>
 
 This feature is the only thing that the debug mode option currently does.
 To recompile 'js.js' after making changes to one of the js files in the 'includes' folder, Make sure 'debug_mode' is set to false, then call 'node main.node.js --compile_assets' once.
