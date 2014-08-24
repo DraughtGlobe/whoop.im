@@ -38,6 +38,7 @@ if(!compile_js)
  */
  var file_object = {
      '/':{path:'./pages/main.page.html', content_type:'text/html'},
+     '/js/client_config.js':{path:'./includes/client_config.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/js/jquery-1.7.2.js':{path:'./includes/jquery-1.7.2.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/js/client.class.js':{path:'./includes/client.class.js', content_type:'text/javascript', is_binary:false, extern:false},
      '/js/channel.class.js':{path:'./includes/channel.class.js', content_type:'text/javascript', is_binary:false, extern:false},

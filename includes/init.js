@@ -36,6 +36,6 @@ if (!Array.prototype.indexOf) {
 
 // Init
 $(document).ready(function(){
-    gc_client = new gc_Client();
+    gc_client = new gc_Client(client_config.server, client_config.port);
     gc_client.initialize();
 });

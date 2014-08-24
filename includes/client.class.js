@@ -4,8 +4,10 @@
  */
 
 
-function gc_Client()
+function gc_Client(server_address, server_port)
 {
+    this.server_address = server_address;
+    this.server_port = server_port;
     this.socket_client = null;
     this.user_name = "";
     this.channels = new Object();
@@ -228,7 +230,7 @@ gc_Client.prototype.getUsername = function()
 gc_Client.prototype.initialize = function()
 {    
     
-    this.socket_client = io.connect('http://192.168.42.74:8000/');
+    this.socket_client = io.connect('http://'+this.server_address+':'+this.server_port+'/');
     
     // closure scope
     var current_client = this;
