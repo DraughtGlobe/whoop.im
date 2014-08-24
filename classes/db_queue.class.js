@@ -9,7 +9,7 @@ function DBQueue(connection)
 {
     this.connection = connection;
     this.queue = new Array();
-}
+};
 
 DBQueue.prototype.query = function(query, param, callback)
 {
@@ -20,7 +20,7 @@ DBQueue.prototype.query = function(query, param, callback)
         // queue for later
         this.queue.push({'query':query, 'param':param, 'callback':callback});
     }
-}
+};
 
 DBQueue.prototype.connectionSetActive = function()
 {
@@ -39,10 +39,11 @@ DBQueue.prototype.connectionSetActive = function()
         }
         
     }
-}
+};
 
 DBQueue.prototype.connectionSetInActive = function()
 {
     connection.is_active = false;
-}
+};
 
+module.exports = DBQueue;
