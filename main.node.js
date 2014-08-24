@@ -22,10 +22,10 @@ switch(config.debug_mode.set)
         }
     break;
     case true:
-        // ok
+        compile_js = false;
     break;
     case false:
-        compile_js = false;
+        // ok
     break;   
 }
 if(!compile_js)
@@ -179,7 +179,7 @@ function loadFile(url, client)
     //console.log(file_object);
     if(file_object[url] == undefined)
     {
-        console.log('ERROR: File not found using the following url: s' + url);
+        console.log('ERROR: File not found using the following url: ' + url);
         client.writeHead(404, {'content-type':'text/html'});
         client.end('File not found');
         return;
