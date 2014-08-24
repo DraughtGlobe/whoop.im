@@ -19,7 +19,7 @@ DBQueue.prototype.query = function(query, params, callback)
         connection.query(query, params, callback);
     } else {
         // queue for later
-        this.queue.push({'query':query, 'param':param, 'callback':callback});
+        this.queue.push({'query':query, 'param':params, 'callback':callback});
     }
 };
 
