@@ -23,7 +23,7 @@ module.exports = {
     // http settings
     'http': {
         // port
-        'port':'80',
+        'port':'8000',
          // listen on that ip only
         'ip': undefined
     }
