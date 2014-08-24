@@ -19,6 +19,7 @@ Features
 - Message limit over a small period of time to prevent spamming ( does not affect Root users )
 - Private messaging
 - Text Pages
+- Allows clients connecting to the server via a socket ( For example the whoop.im Android app: https://github.com/DraughtGlobe/whoop.im.android )
 
 Any connected ( registered or not ) user can create a channel and be admin of it by joining a non-existing channel
 
