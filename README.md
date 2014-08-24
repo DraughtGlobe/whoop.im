@@ -47,6 +47,7 @@ Currently has a 'debug_mode' in config.js which is set to false by default. When
     <script type="text/javascript" src="js/js.js"></script>
 
 This feature is the only thing that the debug mode option currently does.
+
 To recompile 'js.js' after making changes to one of the js files in the 'includes' folder, Make sure 'debug_mode' is set to false, then call 'node main.node.js --compile_assets' once.
 
 Legal
