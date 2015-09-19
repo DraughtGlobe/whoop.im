@@ -275,6 +275,15 @@ user_list.getUsers = function()
     return user_list.users;
 }
 
+// http://stackoverflow.com/a/3710226
+var json_parse = function (str) {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+};
+
 //mysql client
 var database = null
 var mysql = require("mysql");
@@ -415,7 +424,7 @@ var server = net.createServer(function(c) { //'connection' listener
 
         // console.log('recieve-Data');
         // console.log(data);
-        data = JSON.parse(data);
+        data = json_parse(data);
 
       // console.log(data.toString());
       var action = data.action;
