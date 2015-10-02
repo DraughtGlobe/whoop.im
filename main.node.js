@@ -280,6 +280,7 @@ var json_parse = function (str) {
     try {
         return JSON.parse(str);
     } catch (e) {
+		console.log('Invalid JSON socket data: '+ str);
         return false;
     }
 };
@@ -425,6 +426,10 @@ var server = net.createServer(function(c) { //'connection' listener
         // console.log('recieve-Data');
         // console.log(data);
         data = json_parse(data);
+		if(data === false)
+		{
+			return;
+		}
 
       // console.log(data.toString());
       var action = data.action;
